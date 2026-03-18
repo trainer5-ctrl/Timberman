@@ -19,49 +19,26 @@ class Lumberjack {
         this.highScore = localStorage.getItem('highScore') || 0;
 
         // ==============================
-        // 🔥 TELEGRAM USER DETECTION (FINAL)
+        // 🔥 TELEGRAM USER DETECTION (FIXED)
         // ==============================
-        this.playerName = "Guest";
+        this.playerName = "Player";
 
         try {
-            // 🧪 DEBUG
-            console.log("WebApp:", window.Telegram?.WebApp?.initDataUnsafe);
-            console.log("GameProxy:", window.TelegramGameProxy?.initParams);
+            const webApp = window.Telegram?.WebApp;
+            const gameProxy = window.TelegramGameProxy;
 
-            // =========================
-            // ✅ 1. TELEGRAM GAME (PRIORITAS)
-            // =========================
-            if (window.TelegramGameProxy && TelegramGameProxy.initParams) {
-                let params = TelegramGameProxy.initParams;
-
-                if (params.user) {
-                    let user = JSON.parse(params.user);
-
-                    if (user.username) {
-                        this.playerName = "@" + user.username;
-                    } else if (user.first_name) {
-                        this.playerName = user.first_name;
-                    }
-                }
+            // 1. Cek via Telegram WebApp (Mini Apps)
+            if (webApp && webApp.initDataUnsafe && webApp.initDataUnsafe.user) {
+                const user = webApp.initDataUnsafe.user;
+                this.playerName = user.username ? "@" + user.username : `${user.first_name} ${user.last_name || ""}`.trim();
+            } 
+            // 2. Cek via Telegram GameProxy (GameBot)
+            else if (gameProxy && gameProxy.initParams && gameProxy.initParams.user) {
+                const user = JSON.parse(gameProxy.initParams.user);
+                this.playerName = user.username ? "@" + user.username : `${user.first_name} ${user.last_name || ""}`.trim();
             }
-
-            // =========================
-            // ✅ 2. TELEGRAM WEBAPP
-            // =========================
-            else if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
-                let user = Telegram.WebApp.initDataUnsafe.user;
-
-                if (user) {
-                    if (user.username) {
-                        this.playerName = "@" + user.username;
-                    } else if (user.first_name) {
-                        this.playerName = user.first_name;
-                    }
-                }
-            }
-
         } catch (err) {
-            console.log("User detection error:", err);
+            console.error("User detection error:", err);
         }
 
         this.listener();
@@ -87,22 +64,21 @@ class Lumberjack {
     drawScore() {
         this.ctx.fillStyle = "#333";
 
-        // 🔥 PLAYER NAME
-        this.ctx.font = "20px Arial";
-        this.ctx.fillText("Player: " + this.playerName, 30, 30);
+        // 🔥 Tampilan Nama Player
+        this.ctx.font = "bold 18px Arial";
+        let displayName = this.playerName.length > 15 ? this.playerName.substring(0, 13) + ".." : this.playerName;
+        this.ctx.fillText("Player: " + displayName, 30, 40);
 
         // SCORE
-        this.ctx.font = "24px Arial";
-        this.ctx.fillText("Score", 30, 70);
-
-        this.ctx.font = "32px Arial";
-        this.ctx.fillText(this.score, 30, 110);
+        this.ctx.font = "20px Arial";
+        this.ctx.fillText("Score", 30, 80);
+        this.ctx.font = "bold 32px Arial";
+        this.ctx.fillText(this.score, 30, 115);
 
         // HIGHSCORE
-        this.ctx.font = "24px Arial";
-        this.ctx.fillText("Highscore", 30, 160);
-
-        this.ctx.font = "32px Arial";
+        this.ctx.font = "20px Arial";
+        this.ctx.fillText("Highscore", 30, 165);
+        this.ctx.font = "bold 32px Arial";
         this.ctx.fillText(this.highScore, 30, 200);
     }
 
@@ -113,8 +89,6 @@ class Lumberjack {
         this.drawScore();
     }
 
-    update() {}
-
     render() {
         this.draw();
         requestAnimationFrame(() => this.render());
@@ -122,7 +96,6 @@ class Lumberjack {
 
     move(direction) {
         this.person.characterPosition = direction;
-
         this.tree.trees.shift();
         this.tree.createNewTrunk();
 
@@ -142,41 +115,23 @@ class Lumberjack {
             (currentBranch == 'right' && this.person.characterPosition == 'right')
         ) {
             setTimeout(() => {
-
                 if (this.score > this.highScore) {
                     localStorage.setItem('highScore', this.score);
                 }
-
-                let highScore = localStorage.getItem('highScore') || 0;
-
-                // 🔥 GAME OVER MESSAGE + USERNAME
-                alert(
-                    `You lose!\n\nPlayer: ${this.playerName}\nScore: ${this.score}\nHighscore: ${highScore}`
-                );
-
+                
+                alert(`Game Over!\n\nPlayer: ${this.playerName}\nScore: ${this.score}\nHighscore: ${localStorage.getItem('highScore')}`);
                 window.location.reload();
-
             }, 100);
         }
     }
 
     listener() {
-        let that = this;
-
-        window.addEventListener('keypress', (e) => {
-            if (e.key == 'a' || e.key == 'ArrowLeft') {
-                this.move('left');
-            } else if (e.key == 'd' || e.key == 'ArrowRight') {
-                this.move('right');
-            }
+        window.addEventListener('keydown', (e) => {
+            if (e.key == 'a' || e.key == 'ArrowLeft') this.move('left');
+            if (e.key == 'd' || e.key == 'ArrowRight') this.move('right');
         });
 
-        this.btnLeft.addEventListener('click', () => {
-            that.move('left');
-        });
-
-        this.btnRight.addEventListener('click', () => {
-            that.move('right');
-        });
+        this.btnLeft.addEventListener('click', () => this.move('left'));
+        this.btnRight.addEventListener('click', () => this.move('right'));
     }
 }
