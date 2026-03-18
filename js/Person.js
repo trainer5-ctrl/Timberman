@@ -4,30 +4,30 @@ class Person {
         this.ctx = canvas.getContext('2d');
         
         this.image = new Image();
-        this.image.src = "images/chara.png"; // Pastikan path file benar
+        this.image.src = "chara.jpg"; // Nama file sesuai yang kamu unggah
 
-        this.characterPosition = "right"; // Posisi awal
-        this.characterWidth = 100; 
-        this.characterHeight = 160;
+        this.characterPosition = "right"; 
+        this.characterWidth = 120; // Ukuran tampilan di canvas
+        this.characterHeight = 120;
 
+        // Atur koordinat agar karakter berada di kiri atau kanan pohon
         this.characterPositions = {
-            left: { x: canvas.width / 2 - 170, y: canvas.height - 320 },
-            right: { x: canvas.width / 2 + 70, y: canvas.height - 320 }
+            left: { x: canvas.width / 2 - 150, y: canvas.height - 150 },
+            right: { x: canvas.width / 2 + 30, y: canvas.height - 150 }
         };
 
         this.frameIndex = 0;
-        this.numberOfFrames = 6;
+        this.numberOfFrames = 6; // Total pose dalam gambar chara.jpg
         this.tickCount = 0;
-        this.ticksPerFrame = 4; // Sedikit lebih cepat agar terasa responsif
+        this.ticksPerFrame = 4;  // Kecepatan ayunan kapak
         this.isAnimating = false;
     }
 
-    // Fungsi untuk memicu gerakan
-    move(side) {
+    // Fungsi ini dipanggil saat tombol diklik
+    action(side) {
         this.characterPosition = side;
-        this.frameIndex = 0; // Reset ke frame pertama setiap kali klik
-        this.tickCount = 0;
-        this.isAnimating = true; 
+        this.frameIndex = 0;    // Mulai ayunan dari frame pertama
+        this.isAnimating = true; // Aktifkan animasi
     }
 
     update() {
@@ -37,12 +37,12 @@ class Person {
         if (this.tickCount > this.ticksPerFrame) {
             this.tickCount = 0;
             
-            // Jika sudah mencapai frame terakhir, hentikan animasi
             if (this.frameIndex < this.numberOfFrames - 1) {
                 this.frameIndex++;
             } else {
-                this.frameIndex = 0; // Kembali ke posisi siap
-                this.isAnimating = false; // Berhenti mengayun
+                // Selesai mengayun, kembali ke frame 0 dan berhenti
+                this.frameIndex = 0;
+                this.isAnimating = false;
             }
         }
     }
@@ -51,13 +51,14 @@ class Person {
         if (!this.image.complete) return;
 
         let pos = this.characterPositions[this.characterPosition];
+        
+        // Menghitung lebar satu frame (lebar total gambar / 6)
         const sw = this.image.width / this.numberOfFrames;
         const sh = this.image.height;
 
         this.ctx.save();
 
-        // Logika membalikkan badan (Flip)
-        // Kita balikkan jika di posisi 'left' atau 'right' tergantung selera arah gambar asli
+        // Jika posisi kanan, kita balik gambarnya (Flip Horizontal)
         if (this.characterPosition === 'right') {
             this.ctx.translate(pos.x + this.characterWidth / 2, 0);
             this.ctx.scale(-1, 1);
@@ -66,7 +67,7 @@ class Person {
 
         this.ctx.drawImage(
             this.image,
-            this.frameIndex * sw, 0, 
+            this.frameIndex * sw, 0, // Mengambil frame ke-n secara horizontal
             sw, sh,                  
             pos.x, pos.y,            
             this.characterWidth, this.characterHeight 
