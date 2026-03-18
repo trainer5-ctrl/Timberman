@@ -6,12 +6,92 @@
     <title>Algebra Rush</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background: #d3f7ff; }
+        #app { position: relative; width: 100%; height: 100vh; }
+        
+        /* Container untuk UI Skor di Atas Canvas */
+        .game-ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            pointer-events: none; /* Klik tetap tembus ke canvas */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10; /* Berada di atas canvas */
+        }
+
+        /* UI Skor Utama (Besar di Tengah) */
+        .main-score {
+            font-family: 'Courier New', Courier, monospace; /* Gaya Retro Modern */
+            font-size: 64px;
+            font-weight: bold;
+            color: #333;
+            text-shadow: 2px 2px 0 #fff; /* Efek Outlined */
+            margin: 0;
+        }
+
+        /* UI Data Player di Atas (Nama & Highscore) */
+        .player-info {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            color: #555;
+            text-shadow: 1px 1px 0 #fff;
+            position: absolute;
+            top: 0px;
+            left: 20px; /* Letak di pojok kiri atas */
+            background: rgba(255, 255, 255, 0.4); /* Efek Kaca Blur Transparan */
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+
+        /* Control Buttons UI */
+        .control {
+            position: absolute;
+            bottom: 40px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            z-index: 10;
+        }
+        .btn-control {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: #39446e;
+            color: white;
+            border: 6px solid #fefeff;
+            font-family: 'Verdana', sans-serif;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+            transition: all 0.1s;
+        }
+        .btn-control:active {
+            transform: scale(0.9) translateY(4px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+    </style>
 </head>
 <body>
     <div id="app">
+        <div class="game-ui-overlay">
+            <p id="ui-current-score" class="main-score">0</p>
+            <div class="player-info">
+                <span>Player: <strong id="ui-player-name">Guest</strong></span><br>
+                <span>High: <strong id="ui-high-score">0</strong></span>
+            }
+        </div>
+
         <div class="game">
             <canvas id="canvas"></canvas>
         </div>
+        
         <div class="control">
             <button class='btn-control' id="move-left">LEFT</button>
             <button class='btn-control' id="move-right">RIGHT</button>
