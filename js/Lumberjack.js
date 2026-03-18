@@ -19,20 +19,49 @@ class Lumberjack {
         this.highScore = localStorage.getItem('highScore') || 0;
 
         // ==============================
-        // 🔥 TELEGRAM USER INTEGRATION
+        // 🔥 TELEGRAM USER DETECTION (FINAL)
         // ==============================
         this.playerName = "Guest";
 
-        if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
-            let user = Telegram.WebApp.initDataUnsafe.user;
+        try {
+            // 🧪 DEBUG
+            console.log("WebApp:", window.Telegram?.WebApp?.initDataUnsafe);
+            console.log("GameProxy:", window.TelegramGameProxy?.initParams);
 
-            if (user) {
-                if (user.username) {
-                    this.playerName = "@" + user.username;
-                } else {
-                    this.playerName = user.first_name + (user.last_name ? " " + user.last_name : "");
+            // =========================
+            // ✅ 1. TELEGRAM GAME (PRIORITAS)
+            // =========================
+            if (window.TelegramGameProxy && TelegramGameProxy.initParams) {
+                let params = TelegramGameProxy.initParams;
+
+                if (params.user) {
+                    let user = JSON.parse(params.user);
+
+                    if (user.username) {
+                        this.playerName = "@" + user.username;
+                    } else if (user.first_name) {
+                        this.playerName = user.first_name;
+                    }
                 }
             }
+
+            // =========================
+            // ✅ 2. TELEGRAM WEBAPP
+            // =========================
+            else if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
+                let user = Telegram.WebApp.initDataUnsafe.user;
+
+                if (user) {
+                    if (user.username) {
+                        this.playerName = "@" + user.username;
+                    } else if (user.first_name) {
+                        this.playerName = user.first_name;
+                    }
+                }
+            }
+
+        } catch (err) {
+            console.log("User detection error:", err);
         }
 
         this.listener();
@@ -47,11 +76,9 @@ class Lumberjack {
     }
 
     drawBackground() {
-        // Sky
         this.ctx.fillStyle = this.background;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Land
         let land = new Image();
         land.src = "images/land.png";
         this.ctx.drawImage(land, 0, this.canvas.height - 300, this.canvas.width, 350);
@@ -60,18 +87,18 @@ class Lumberjack {
     drawScore() {
         this.ctx.fillStyle = "#333";
 
-        // 🔥 Player Name
+        // 🔥 PLAYER NAME
         this.ctx.font = "20px Arial";
         this.ctx.fillText("Player: " + this.playerName, 30, 30);
 
-        // Score
+        // SCORE
         this.ctx.font = "24px Arial";
         this.ctx.fillText("Score", 30, 70);
 
         this.ctx.font = "32px Arial";
         this.ctx.fillText(this.score, 30, 110);
 
-        // Highscore
+        // HIGHSCORE
         this.ctx.font = "24px Arial";
         this.ctx.fillText("Highscore", 30, 160);
 
@@ -99,7 +126,7 @@ class Lumberjack {
         this.tree.trees.shift();
         this.tree.createNewTrunk();
 
-        // Sound
+        // 🔊 SOUND
         let audio = new Audio();
         audio.src = "audio/cut.wav";
         audio.playbackRate = 2;
@@ -109,7 +136,7 @@ class Lumberjack {
 
         let currentBranch = this.tree.trees[0].value;
 
-        // 💀 Collision
+        // 💀 COLLISION CHECK
         if (
             (currentBranch == 'left' && this.person.characterPosition == 'left') ||
             (currentBranch == 'right' && this.person.characterPosition == 'right')
