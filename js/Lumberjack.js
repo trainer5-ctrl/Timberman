@@ -116,4 +116,24 @@ class Lumberjack {
         this.btnLeft.onclick = () => this.move('left');
         this.btnRight.onclick = () => this.move('right');
     }
+
+    // Di dalam file Lumberjack.js
+
+draw() {
+    this.drawBackground();
+    this.tree.draw();
+    
+    // TAMBAHKAN LINE INI:
+    // Update frame animasi sebelum digambar
+    if (this.person) {
+        this.person.update(); 
+    }
+    
+    this.person.draw();
+}
+
+render() {
+    this.draw();
+    requestAnimationFrame(() => this.render());
+}
 }
