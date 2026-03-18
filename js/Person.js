@@ -3,119 +3,75 @@ class Person {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         
-        // Memuat gambar
         this.image = new Image();
-        this.image.src = "images/character.png";
+        this.image.src = "images/chara.png"; // Nama file baru Anda
 
-        // Status Posisi
-        this.characterPosition = "right"; // Posisi target ('left' / 'right')
-        this.characterWidth = 95; // Sedikit diperbesar agar pas dengan pohon
-        this.characterHeight = 170;
+        this.characterPosition = "right";
+        this.characterWidth = 120; // Ukuran sedikit lebar karena ada ayunan kapak
+        this.characterHeight = 160;
 
-        // Koordinat dasar di tanah
         this.groundY = canvas.height - 300;
 
-        // Posisi X tanah agar pas dengan batang pohon
+        // Posisi X diatur agar mata kapak mengenai pohon saat frame mengayun
         this.characterPositions = {
-            left: { x: canvas.width / 2 - 180 },
-            right: { x: canvas.width / 2 + 80 }
+            left: { x: canvas.width / 2 - 190 },
+            right: { x: canvas.width / 2 + 70 }
         };
 
-        // --- Logika Animasi Menebang Pohon (Sekali Jalan) ---
-        this.frameIndex = 0; // Frame aktif (0-5)
-        this.numberOfFrames = 6; // Total ada 6 frame di sprite sheet
-        this.tickCount = 0; // Penghitung waktu
-        this.ticksPerFrame = 5; // Kecepatan animasi (sedikit dipercepat untuk presisi)
+        this.frameIndex = 0;
+        this.numberOfFrames = 6; // Tetap 6 frame sesuai gambar baru
+        this.tickCount = 0;
+        this.ticksPerFrame = 4; // Lebih cepat agar tebasan terasa bertenaga
         
-        // KUNCI: Status dan jarak menerjang
-        this.isChopping = false; 
-        this.currentOffsetX = 0; // Keterjangan ke samping dari posisi dasar
-        this.maxChopLunge = 50; // Jarak menerjang maksimal (piksel)
+        this.isChopping = false;
     }
 
-    // Fungsi untuk memicu animasi menerjang dari Lumberjack.js
     startChop() {
         this.isChopping = true;
-        this.frameIndex = 0; // Mulai dari frame pertama
+        this.frameIndex = 0;
         this.tickCount = 0;
-        this.currentOffsetX = 0; // Reset keterjangan
     }
 
-    // Fungsi update untuk menghitung frame dan posisi X (keterjangan)
     update() {
-        // Jika tidak memukul, diam di frame 0 dan di posisi dasar
         if (!this.isChopping) {
-            this.frameIndex = 0;
-            this.currentOffsetX = 0;
+            this.frameIndex = 5; // Posisi diam (idle) menggunakan frame terakhir
             return;
         }
 
         this.tickCount++;
-        
         if (this.tickCount > this.ticksPerFrame) {
             this.tickCount = 0;
-            
-            // Maju ke frame berikutnya
             this.frameIndex++;
             
-            // JIKA sudah frame terakhir, matikan status menerjang
             if (this.frameIndex >= this.numberOfFrames) {
                 this.isChopping = false;
-                this.frameIndex = 0; // Kembali diam
-                this.currentOffsetX = 0; // Kembali ke posisi dasar
+                this.frameIndex = 5; 
             }
-        }
-
-        // --- HITUNG KETERJANGAN (X) PRESISI ---
-        if (this.isChopping) {
-            // Kita gunakan kurva Sinus untuk gerakan menerjang yang bertenaga
-            // Progress lompatan dari 0.0 sampai 1.0
-            const progress = this.frameIndex / (this.numberOfFrames - 1);
-            
-            // Keterjangan maksimal dihitung dengan: sin(pi * progress) * maxHeight
-            const curveFactor = Math.sin(Math.PI * progress);
-            
-            // Kalikan dengan jarak menerjang maksimal
-            this.currentOffsetX = curveFactor * this.maxChopLunge;
         }
     }
 
     draw() {
-        // Proteksi jika gambar belum load
         if (!this.image.complete) return;
 
         let pos = this.characterPositions[this.characterPosition];
-        
-        // Hitung lebar satu frame asli dari gambar source
         const sw = this.image.width / this.numberOfFrames; 
         const sh = this.image.height;
 
         this.ctx.save();
 
-        // --- Logika Posisi X Presisi (Menerjang) ---
-        let drawX = pos.x;
-
-        // Jika hadap kanan, keterjangan (currentOffsetX) harus mengurangi koordinat X
-        if (this.characterPosition === 'right') {
-            drawX = pos.x - this.currentOffsetX;
-        } else {
-            // Jika hadap kiri, keterjangan (currentOffsetX) harus menambah koordinat X
-            drawX = pos.x + this.currentOffsetX;
-        }
-
         // Balik karakter jika hadap kanan
         if (this.characterPosition === 'right') {
-            this.ctx.translate(drawX + this.characterWidth / 2, 0);
+            this.ctx.translate(pos.x + this.characterWidth / 2, 0);
             this.ctx.scale(-1, 1);
-            this.ctx.translate(-(drawX + this.characterWidth / 2), 0);
+            this.ctx.translate(-(pos.x + this.characterWidth / 2), 0);
         }
 
         this.ctx.drawImage(
             this.image,
-            this.frameIndex * sw, 0, // Potong gambar berdasarkan frameIndex
-            sw, sh,                  // Ukuran asli potongan
-            drawX, this.groundY,     // Posisi di kanvas (menggunakan drawX baru)
-            this.characterWidth, this.characterHeight // Ukuran di kanvas
+            this.frameIndex * sw, 0,
+            sw, sh,
+            pos.x, this.groundY,
+            this.characterWidth, this.characterHeight
         );
 
         this.ctx.restore();
