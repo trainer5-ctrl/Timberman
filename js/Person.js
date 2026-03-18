@@ -3,25 +3,23 @@ class Person {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         
-        // Load Gambar
         this.image = new Image();
         this.image.src = "images/character.png";
 
-        // Posisi default
         this.characterPosition = "right";
-        this.characterWidth = 80;  // Sesuaikan ukuran di layar
-        this.characterHeight = 160; 
+        this.characterWidth = 100; // Ukuran sedikit diperbesar agar proporsional
+        this.characterHeight = 160;
 
-        this.positions = {
-            left: { x: canvas.width / 2 - 140, y: canvas.height - 300 },
-            right: { x: canvas.width / 2 + 60, y: canvas.height - 300 }
+        // Sesuaikan posisi X agar pas dengan batang pohon
+        this.characterPositions = {
+            left: { x: canvas.width / 2 - 170, y: canvas.height - 320 },
+            right: { x: canvas.width / 2 + 70, y: canvas.height - 320 }
         };
 
-        // --- Logika Animasi ---
         this.frameIndex = 0;
-        this.numberOfFrames = 6; // Karena gambar Anda punya 6 pose
+        this.numberOfFrames = 6;
         this.tickCount = 0;
-        this.ticksPerFrame = 8;  // Kecepatan gerak (kecil = makin cepat)
+        this.ticksPerFrame = 6; // Angka lebih kecil = animasi lebih cepat
     }
 
     update() {
@@ -33,16 +31,17 @@ class Person {
     }
 
     draw() {
-        if (!this.image.complete) return; // Tunggu gambar loading
+        // Pastikan gambar sudah load
+        if (!this.image.complete) return;
 
-        const pos = this.positions[this.characterPosition];
-        const sw = this.image.width / this.numberOfFrames; // Lebar 1 potongan asli
+        let pos = this.characterPositions[this.characterPosition];
+        const sw = this.image.width / this.numberOfFrames;
         const sh = this.image.height;
 
         this.ctx.save();
 
-        // Jika hadap kanan, kita balik gambarnya secara horizontal (mirror)
         if (this.characterPosition === 'right') {
+            // Balik karakter secara horizontal di titik koordinatnya
             this.ctx.translate(pos.x + this.characterWidth / 2, 0);
             this.ctx.scale(-1, 1);
             this.ctx.translate(-(pos.x + this.characterWidth / 2), 0);
@@ -50,20 +49,12 @@ class Person {
 
         this.ctx.drawImage(
             this.image,
-            this.frameIndex * sw, 0, // Potong gambar berdasarkan frameIndex
-            sw, sh,                 // Ukuran asli potongan
-            pos.x, pos.y,           // Posisi di kanvas
-            this.characterWidth, this.characterHeight // Ukuran di kanvas
+            this.frameIndex * sw, 0, 
+            sw, sh,                 
+            pos.x, pos.y,           
+            this.characterWidth, this.characterHeight 
         );
 
         this.ctx.restore();
-    }
-
-    moveLeft() {
-        this.characterPosition = 'left';
-    }
-
-    moveRight() {
-        this.characterPosition = 'right';
     }
 }
