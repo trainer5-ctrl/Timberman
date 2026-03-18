@@ -1,8 +1,9 @@
 class Lumberjack {
     constructor(props) {
         this.canvas = props.el;
+        // Buat canvas sedikit lebih tinggi untuk UI overlay
         this.canvas.width = window.innerWidth > props.maxWidth ? props.maxWidth : window.innerWidth;
-        this.canvas.height = props.maxHeight;
+        this.canvas.height = props.maxHeight + 50; 
         this.ctx = props.el.getContext('2d');
         
         this.background = '#d3f7ff';
@@ -11,29 +12,36 @@ class Lumberjack {
         this.btnLeft = props.btnLeft;
         this.btnRight = props.btnRight;
 
-        // ==============================
-        // 🆔 PENGAMBILAN NAMA PLAYER
-        // ==============================
+        // Referensi Elemen UI HTML (Overlay)
+        this.uiScore = document.getElementById('ui-current-score');
+        this.uiName = document.getElementById('ui-player-name');
+        this.uiHigh = document.getElementById('ui-high-score');
+
+        // ==========================================
+        // 🆔 OTOMATIS AMBIL DATA USER TELEGRAM
+        // ==========================================
         this.playerName = "Guest Player"; 
 
-        // 1. Ambil dari URL Parameter (Metode Utama dari Bot)
-        const urlParams = new URLSearchParams(window.location.search);
-        const nameFromUrl = urlParams.get('playerName');
+        const tg = window.Telegram.WebApp;
 
-        if (nameFromUrl) {
-            this.playerName = nameFromUrl;
-        } 
-        // 2. Backup: Ambil dari SDK WebApp (Jika dibuka sebagai Mini App)
-        else if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe.user) {
-            const user = window.Telegram.WebApp.initDataUnsafe.user;
-            this.playerName = user.username ? "@" + user.username : user.first_name;
+        if (tg) {
+            tg.ready();
+            tg.expand(); // Fullscreen
+            
+            // Atur warna Header WebApp agar sinkron dengan game
+            tg.setHeaderColor('#d3f7ff');
+
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                const user = tg.initDataUnsafe.user;
+                this.playerName = user.username ? "@" + user.username : `${user.first_name} ${user.last_name || ""}`.trim();
+            }
         }
 
-        // Beritahu Telegram bahwa game siap
-        if (window.Telegram && window.Telegram.WebApp) {
-            window.Telegram.WebApp.ready();
-            window.Telegram.WebApp.expand();
-        }
+        // --- UPDATE UI MINI ---
+        // Potong nama jika terlalu panjang
+        let nameToDisplay = this.playerName.length > 18 ? this.playerName.substring(0, 15) + ".." : this.playerName;
+        if(this.uiName) this.uiName.innerText = nameToDisplay;
+        if(this.uiHigh) this.uiHigh.innerText = this.highScore;
 
         this.listener();
     }
@@ -49,31 +57,21 @@ class Lumberjack {
         this.ctx.fillStyle = this.background;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
+        // Land/Tanah sedikit diturunkan agarUI di atas rapi
         let land = new Image();
         land.src = "images/land.png";
-        // Tunggu gambar load atau gambar langsung jika sudah ada di cache
-        this.ctx.drawImage(land, 0, this.canvas.height - 300, this.canvas.width, 350);
+        this.ctx.drawImage(land, 0, this.canvas.height - 280, this.canvas.width, 350);
     }
 
-    drawScore() {
-        this.ctx.fillStyle = "#333";
-        
-        // Render Nama Player di Canvas
-        this.ctx.font = "bold 18px Arial";
-        let displayTitle = this.playerName.length > 15 ? this.playerName.substring(0, 12) + "..." : this.playerName;
-        this.ctx.fillText("Player: " + displayTitle, 20, 40);
-
-        // Render Score
-        this.ctx.font = "20px Arial";
-        this.ctx.fillText("Score: " + this.score, 20, 75);
-        this.ctx.fillText("High: " + this.highScore, 20, 105);
-    }
+    // 🔥 drawScore di canvas ini kita matikan total! 
+    // UI kita handle lewat HTML/CSS agar profesional.
+    drawScore() {}
 
     draw() {
         this.drawBackground();
         this.tree.draw();
         this.person.draw();
-        this.drawScore();
+        // Kita tidak panggil drawScore canvas lagi
     }
 
     render() {
@@ -86,37 +84,41 @@ class Lumberjack {
         this.tree.trees.shift();
         this.tree.createNewTrunk();
 
-        // Sound Effect
         let audio = new Audio("audio/cut.wav");
         audio.playbackRate = 2;
         audio.play().catch(() => {});
 
+        // --- UPDATE SCORE & UI ---
         this.score++;
+        if(this.uiScore) this.uiScore.innerText = this.score; // Update angka besar di tengah
+
         let currentBranch = this.tree.trees[0].value;
 
-        // Cek Tabrakan
         if (currentBranch === direction) {
-            // Getar HP (Haptic Feedback)
-            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+            // Haptic Telegram saat kalah
+            if (window.Telegram.WebApp.HapticFeedback) {
                 window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
             }
 
+            // Atur Highscore
+            if (this.score > this.highScore) {
+                localStorage.setItem('highScore', this.score);
+            }
+
+            // Sedikit delay agar user sadar dia kalah
             setTimeout(() => {
-                if (this.score > this.highScore) {
-                    localStorage.setItem('highScore', this.score);
-                }
-                alert(`GAME OVER!\n\nPlayer: ${this.playerName}\nScore: ${this.score}\nHighscore: ${localStorage.getItem('highScore')}`);
+                alert(`GAME OVER!\n\nPlayer: ${this.playerName}\nScore: ${this.score}`);
                 window.location.reload();
-            }, 50);
+            }, 80);
         }
     }
 
     listener() {
+        // Atur agar tombol responsif saat ditekan
         window.addEventListener('keydown', (e) => {
             if (e.key === 'a' || e.key === 'ArrowLeft') this.move('left');
             if (e.key === 'd' || e.key === 'ArrowRight') this.move('right');
         });
-
         this.btnLeft.onclick = () => this.move('left');
         this.btnRight.onclick = () => this.move('right');
     }
