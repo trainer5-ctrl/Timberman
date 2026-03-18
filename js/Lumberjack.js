@@ -12,22 +12,27 @@ class Lumberjack {
         this.btnRight = props.btnRight;
 
         // ==============================
-        // 🆔 TELEGRAM USER DETECTION
+        // 🆔 PENGAMBILAN NAMA PLAYER
         // ==============================
-        this.playerName = "Guest Player";
+        this.playerName = "Guest Player"; 
 
-        try {
-            const tg = window.Telegram.WebApp;
-            tg.ready(); // Memberitahu Telegram bahwa app siap
-            tg.expand(); // Membuka layar penuh
+        // 1. Ambil dari URL Parameter (Metode Utama dari Bot)
+        const urlParams = new URLSearchParams(window.location.search);
+        const nameFromUrl = urlParams.get('playerName');
 
-            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                const user = tg.initDataUnsafe.user;
-                // Ambil Username (@user), jika tidak ada pakai Nama Asli
-                this.playerName = user.username ? "@" + user.username : `${user.first_name} ${user.last_name || ""}`.trim();
-            }
-        } catch (err) {
-            console.error("Gagal mengambil data Telegram:", err);
+        if (nameFromUrl) {
+            this.playerName = nameFromUrl;
+        } 
+        // 2. Backup: Ambil dari SDK WebApp (Jika dibuka sebagai Mini App)
+        else if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe.user) {
+            const user = window.Telegram.WebApp.initDataUnsafe.user;
+            this.playerName = user.username ? "@" + user.username : user.first_name;
+        }
+
+        // Beritahu Telegram bahwa game siap
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
         }
 
         this.listener();
@@ -43,15 +48,17 @@ class Lumberjack {
     drawBackground() {
         this.ctx.fillStyle = this.background;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
         let land = new Image();
         land.src = "images/land.png";
+        // Tunggu gambar load atau gambar langsung jika sudah ada di cache
         this.ctx.drawImage(land, 0, this.canvas.height - 300, this.canvas.width, 350);
     }
 
     drawScore() {
         this.ctx.fillStyle = "#333";
         
-        // Render Nama Player
+        // Render Nama Player di Canvas
         this.ctx.font = "bold 18px Arial";
         let displayTitle = this.playerName.length > 15 ? this.playerName.substring(0, 12) + "..." : this.playerName;
         this.ctx.fillText("Player: " + displayTitle, 20, 40);
@@ -59,7 +66,7 @@ class Lumberjack {
         // Render Score
         this.ctx.font = "20px Arial";
         this.ctx.fillText("Score: " + this.score, 20, 75);
-        this.ctx.fillText("Highscore: " + this.highScore, 20, 105);
+        this.ctx.fillText("High: " + this.highScore, 20, 105);
     }
 
     draw() {
@@ -89,8 +96,8 @@ class Lumberjack {
 
         // Cek Tabrakan
         if (currentBranch === direction) {
-            // Getar HP (Fitur Telegram)
-            if (window.Telegram.WebApp.HapticFeedback) {
+            // Getar HP (Haptic Feedback)
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
                 window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
             }
 
@@ -98,7 +105,7 @@ class Lumberjack {
                 if (this.score > this.highScore) {
                     localStorage.setItem('highScore', this.score);
                 }
-                alert(`GAME OVER!\n\nPlayer: ${this.playerName}\nScore: ${this.score}`);
+                alert(`GAME OVER!\n\nPlayer: ${this.playerName}\nScore: ${this.score}\nHighscore: ${localStorage.getItem('highScore')}`);
                 window.location.reload();
             }, 50);
         }
