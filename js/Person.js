@@ -5,7 +5,7 @@ class Person {
         
         // Memuat gambar
         this.image = new Image();
-        this.image.src = "images/character.png";
+        this.image.src = "images/chara-removebg-preview.png";
 
         // Status Posisi
         this.characterPosition = "right";
