@@ -119,21 +119,60 @@ class Lumberjack {
 
     // Di dalam file Lumberjack.js
 
-draw() {
-    this.drawBackground();
-    this.tree.draw();
-    
-    // TAMBAHKAN LINE INI:
-    // Update frame animasi sebelum digambar
-    if (this.person) {
-        this.person.update(); 
+    draw() {
+        this.drawBackground();
+        this.tree.draw();
+        
+        // TAMBAHKAN LINE INI:
+        // Update frame animasi sebelum digambar
+        if (this.person) {
+            this.person.update(); 
+        }
+        
+        this.person.draw();
     }
     
-    this.person.draw();
-}
+    render() {
+        this.draw();
+        requestAnimationFrame(() => this.render());
+    }
 
-render() {
-    this.draw();
-    requestAnimationFrame(() => this.render());
-}
+    // Di dalam file Lumberjack.js
+
+    move(direction) {
+        // KUNCI: Pemicu animasi melompat sekali jalan
+        if (this.person) {
+            this.person.startJump();
+        }
+        
+        // Ubah posisi (ini yang membuat karakter 'lompat' koordinat)
+        this.person.characterPosition = direction;
+        
+        // Logika game lainnya (pohon, audio, dll)
+        this.tree.trees.shift();
+        this.tree.createNewTrunk();
+    
+        let audio = new Audio("audio/cut.wav");
+        audio.playbackRate = 2;
+        audio.play().catch(() => {});
+    
+        this.score++;
+        this.updateScoreUI();
+    
+        let currentBranch = this.tree.trees[0].value;
+    
+        if (currentBranch === direction) {
+            if (window.Telegram.WebApp.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+            }
+    
+            setTimeout(() => {
+                if (this.score > this.highScore) {
+                    localStorage.setItem('highScore', this.score);
+                }
+                alert(`GAME OVER!\n\nPlayer: ${this.playerName}\nScore: ${this.score}`);
+                window.location.reload();
+            }, 50);
+        }
+    }
 }
