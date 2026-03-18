@@ -21,7 +21,7 @@ class Lumberjack {
         // ==============================
         // 🔥 TELEGRAM USER DETECTION (FINAL)
         // ==============================
-        this.playerName = "Guest";
+        this.playerName = "Trainer 05";
 
         try {
             // 🧪 DEBUG
