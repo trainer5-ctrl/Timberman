@@ -6,17 +6,54 @@
     <title>Algebra Rush</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .control {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            pointer-events: none;
+        }
+
+        .btn-control {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            font-size: 12px;
+            background-color: rgba(44, 62, 80, 0.8);
+            color: white;
+            border: none;
+            font-weight: bold;
+            pointer-events: auto;
+        }
+
+        .btn-control:active {
+            transform: scale(0.9);
+        }
+    </style>
+
 </head>
 <body>
     <div id="app">
         <div class="game">
             <canvas id="canvas"></canvas>
         </div>
+
         <div class="control">
-            <button class='btn-control' id="move-left">LEFT</button>
-            <button class='btn-control' id="move-right">RIGHT</button>
+            <button class='btn-control' id="move-left">◀</button>
+            <button class='btn-control' id="move-right">▶</button>
         </div>
     </div>
+
     <script src="js/Helper.js"></script>
     <script src="js/Person.js"></script>
     <script src="js/Tree.js"></script>
