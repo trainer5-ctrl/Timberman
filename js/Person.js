@@ -3,58 +3,57 @@ class Person {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         
-        // Memuat gambar sekali saja di constructor
+        // Load Gambar
         this.image = new Image();
         this.image.src = "images/character.png";
 
+        // Posisi default
         this.characterPosition = "right";
-        this.characterPositions = {
-            left: { x: canvas.width/2 - 160, y: canvas.height - 320 },
-            right: { x: canvas.width/2 + 80, y: canvas.height - 320 }
+        this.characterWidth = 80;  // Sesuaikan ukuran di layar
+        this.characterHeight = 160; 
+
+        this.positions = {
+            left: { x: canvas.width / 2 - 140, y: canvas.height - 300 },
+            right: { x: canvas.width / 2 + 60, y: canvas.height - 300 }
         };
 
-        this.characterWidth = 75;
-        this.characterHeight = 150;
-
         // --- Logika Animasi ---
-        this.frameIndex = 0; // Frame aktif (0-5)
-        this.numberOfFrames = 6; // Total ada 6 karakter di gambar
-        this.tickCount = 0; // Penghitung waktu
-        this.ticksPerFrame = 10; // Kecepatan animasi (semakin besar semakin lambat)
+        this.frameIndex = 0;
+        this.numberOfFrames = 6; // Karena gambar Anda punya 6 pose
+        this.tickCount = 0;
+        this.ticksPerFrame = 8;  // Kecepatan gerak (kecil = makin cepat)
     }
 
     update() {
         this.tickCount++;
         if (this.tickCount > this.ticksPerFrame) {
             this.tickCount = 0;
-            // Loop frame dari 0 ke 5, lalu kembali ke 0
             this.frameIndex = (this.frameIndex + 1) % this.numberOfFrames;
         }
     }
 
     draw() {
-        let pos = this.characterPositions[this.characterPosition];
-        
-        // Hitung lebar satu frame asli dari gambar source
-        const sw = this.image.width / this.numberOfFrames; 
+        if (!this.image.complete) return; // Tunggu gambar loading
+
+        const pos = this.positions[this.characterPosition];
+        const sw = this.image.width / this.numberOfFrames; // Lebar 1 potongan asli
         const sh = this.image.height;
 
         this.ctx.save();
 
+        // Jika hadap kanan, kita balik gambarnya secara horizontal (mirror)
         if (this.characterPosition === 'right') {
-            // Membalik karakter secara horizontal
             this.ctx.translate(pos.x + this.characterWidth / 2, 0);
             this.ctx.scale(-1, 1);
             this.ctx.translate(-(pos.x + this.characterWidth / 2), 0);
         }
 
-        // DrawImage parameter: (image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
         this.ctx.drawImage(
             this.image,
-            this.frameIndex * sw, 0, // Posisi X di sprite sheet (bergeser sesuai frame)
-            sw, sh,                  // Ukuran potongan source
-            pos.x, pos.y,            // Posisi di canvas
-            this.characterWidth, this.characterHeight // Ukuran di canvas
+            this.frameIndex * sw, 0, // Potong gambar berdasarkan frameIndex
+            sw, sh,                 // Ukuran asli potongan
+            pos.x, pos.y,           // Posisi di kanvas
+            this.characterWidth, this.characterHeight // Ukuran di kanvas
         );
 
         this.ctx.restore();
@@ -62,11 +61,9 @@ class Person {
 
     moveLeft() {
         this.characterPosition = 'left';
-        this.update(); // Jalankan update saat bergerak
     }
 
     moveRight() {
         this.characterPosition = 'right';
-        this.update(); // Jalankan update saat bergerak
     }
 }
