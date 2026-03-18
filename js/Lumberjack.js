@@ -1,55 +1,45 @@
 class Lumberjack {
     constructor(props) {
         this.canvas = props.el;
-        // Buat canvas sedikit lebih tinggi untuk UI overlay
-        this.canvas.width = window.innerWidth > props.maxWidth ? props.maxWidth : window.innerWidth;
-        this.canvas.height = props.maxHeight + 50; 
+        // Penyesuaian ukuran canvas untuk layar smartphone
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight - 180; // Sisakan ruang untuk tombol
         this.ctx = props.el.getContext('2d');
         
         this.background = '#d3f7ff';
         this.score = 0;
         this.highScore = localStorage.getItem('highScore') || 0;
+        
+        // Element UI
+        this.elName = document.getElementById('ui-name');
+        this.elHigh = document.getElementById('ui-high');
+        this.elScore = document.getElementById('ui-score');
         this.btnLeft = props.btnLeft;
         this.btnRight = props.btnRight;
 
-        // Referensi Elemen UI HTML (Overlay)
-        this.uiScore = document.getElementById('ui-current-score');
-        this.uiName = document.getElementById('ui-player-name');
-        this.uiHigh = document.getElementById('ui-high-score');
-
-        // ==========================================
-        // 🆔 OTOMATIS AMBIL DATA USER TELEGRAM
-        // ==========================================
-        this.playerName = "Guest Player"; 
-
-        const tg = window.Telegram.WebApp;
-
+        // Inisialisasi Telegram
+        this.playerName = "Player 1";
+        const tg = window.Telegram?.WebApp;
         if (tg) {
             tg.ready();
-            tg.expand(); // Fullscreen
-            
-            // Atur warna Header WebApp agar sinkron dengan game
-            tg.setHeaderColor('#d3f7ff');
-
-            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                const user = tg.initDataUnsafe.user;
-                this.playerName = user.username ? "@" + user.username : `${user.first_name} ${user.last_name || ""}`.trim();
+            tg.expand();
+            if (tg.initDataUnsafe?.user) {
+                const u = tg.initDataUnsafe.user;
+                this.playerName = u.username ? "@" + u.username : u.first_name;
             }
         }
 
-        // --- UPDATE UI MINI ---
-        // Potong nama jika terlalu panjang
-        let nameToDisplay = this.playerName.length > 18 ? this.playerName.substring(0, 15) + ".." : this.playerName;
-        if(this.uiName) this.uiName.innerText = nameToDisplay;
-        if(this.uiHigh) this.uiHigh.innerText = this.highScore;
+        // Update UI Awal
+        this.elName.innerText = this.playerName;
+        this.elHigh.innerText = this.highScore;
 
         this.listener();
     }
 
     init() {
         this.person = new Person(this.canvas);
-        this.tree = new Tree(this.canvas, this.canvas.width / 2, this.canvas.height - 350);
-        this.drawBackground();
+        // StartY disesuaikan agar pohon pas di atas tanah
+        this.tree = new Tree(this.canvas, this.canvas.width / 2, this.canvas.height - 300);
         this.tree.init();
     }
 
@@ -57,21 +47,16 @@ class Lumberjack {
         this.ctx.fillStyle = this.background;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Land/Tanah sedikit diturunkan agarUI di atas rapi
         let land = new Image();
         land.src = "images/land.png";
-        this.ctx.drawImage(land, 0, this.canvas.height - 280, this.canvas.width, 350);
+        // Gambar tanah di bagian paling bawah canvas
+        this.ctx.drawImage(land, 0, this.canvas.height - 250, this.canvas.width, 300);
     }
-
-    // 🔥 drawScore di canvas ini kita matikan total! 
-    // UI kita handle lewat HTML/CSS agar profesional.
-    drawScore() {}
 
     draw() {
         this.drawBackground();
         this.tree.draw();
         this.person.draw();
-        // Kita tidak panggil drawScore canvas lagi
     }
 
     render() {
@@ -84,41 +69,46 @@ class Lumberjack {
         this.tree.trees.shift();
         this.tree.createNewTrunk();
 
-        let audio = new Audio("audio/cut.wav");
-        audio.playbackRate = 2;
-        audio.play().catch(() => {});
+        // Sound & Haptic
+        new Audio("audio/cut.wav").play().catch(() => {});
+        if (window.Telegram?.WebApp?.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+        }
 
-        // --- UPDATE SCORE & UI ---
         this.score++;
-        if(this.uiScore) this.uiScore.innerText = this.score; // Update angka besar di tengah
+        this.elScore.innerText = this.score;
 
         let currentBranch = this.tree.trees[0].value;
 
+        // Collision Check
         if (currentBranch === direction) {
-            // Haptic Telegram saat kalah
-            if (window.Telegram.WebApp.HapticFeedback) {
+            if (window.Telegram?.WebApp?.HapticFeedback) {
                 window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
             }
 
-            // Atur Highscore
             if (this.score > this.highScore) {
                 localStorage.setItem('highScore', this.score);
             }
 
-            // Sedikit delay agar user sadar dia kalah
             setTimeout(() => {
-                alert(`GAME OVER!\n\nPlayer: ${this.playerName}\nScore: ${this.score}`);
+                alert(`GAME OVER!\nScore: ${this.score}`);
                 window.location.reload();
-            }, 80);
+            }, 100);
         }
     }
 
     listener() {
-        // Atur agar tombol responsif saat ditekan
+        // Support Keyboard (Desktop testing)
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'a' || e.key === 'ArrowLeft') this.move('left');
-            if (e.key === 'd' || e.key === 'ArrowRight') this.move('right');
+            if (e.key === 'ArrowLeft' || e.key === 'a') this.move('left');
+            if (e.key === 'ArrowRight' || e.key === 'd') this.move('right');
         });
+
+        // Support Touch/Click (Smartphone)
+        this.btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); this.move('left'); });
+        this.btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); this.move('right'); });
+        
+        // Fallback untuk klik biasa
         this.btnLeft.onclick = () => this.move('left');
         this.btnRight.onclick = () => this.move('right');
     }
