@@ -4,13 +4,12 @@ class Person {
         this.ctx = canvas.getContext('2d');
         
         this.image = new Image();
-        this.image.src = "images/character.png";
+        this.image.src = "images/chara.png"; // Pastikan path file benar
 
-        this.characterPosition = "right";
-        this.characterWidth = 100; // Ukuran sedikit diperbesar agar proporsional
+        this.characterPosition = "right"; // Posisi awal
+        this.characterWidth = 100; 
         this.characterHeight = 160;
 
-        // Sesuaikan posisi X agar pas dengan batang pohon
         this.characterPositions = {
             left: { x: canvas.width / 2 - 170, y: canvas.height - 320 },
             right: { x: canvas.width / 2 + 70, y: canvas.height - 320 }
@@ -19,19 +18,36 @@ class Person {
         this.frameIndex = 0;
         this.numberOfFrames = 6;
         this.tickCount = 0;
-        this.ticksPerFrame = 6; // Angka lebih kecil = animasi lebih cepat
+        this.ticksPerFrame = 4; // Sedikit lebih cepat agar terasa responsif
+        this.isAnimating = false;
+    }
+
+    // Fungsi untuk memicu gerakan
+    move(side) {
+        this.characterPosition = side;
+        this.frameIndex = 0; // Reset ke frame pertama setiap kali klik
+        this.tickCount = 0;
+        this.isAnimating = true; 
     }
 
     update() {
+        if (!this.isAnimating) return;
+
         this.tickCount++;
         if (this.tickCount > this.ticksPerFrame) {
             this.tickCount = 0;
-            this.frameIndex = (this.frameIndex + 1) % this.numberOfFrames;
+            
+            // Jika sudah mencapai frame terakhir, hentikan animasi
+            if (this.frameIndex < this.numberOfFrames - 1) {
+                this.frameIndex++;
+            } else {
+                this.frameIndex = 0; // Kembali ke posisi siap
+                this.isAnimating = false; // Berhenti mengayun
+            }
         }
     }
 
     draw() {
-        // Pastikan gambar sudah load
         if (!this.image.complete) return;
 
         let pos = this.characterPositions[this.characterPosition];
@@ -40,8 +56,9 @@ class Person {
 
         this.ctx.save();
 
+        // Logika membalikkan badan (Flip)
+        // Kita balikkan jika di posisi 'left' atau 'right' tergantung selera arah gambar asli
         if (this.characterPosition === 'right') {
-            // Balik karakter secara horizontal di titik koordinatnya
             this.ctx.translate(pos.x + this.characterWidth / 2, 0);
             this.ctx.scale(-1, 1);
             this.ctx.translate(-(pos.x + this.characterWidth / 2), 0);
@@ -50,8 +67,8 @@ class Person {
         this.ctx.drawImage(
             this.image,
             this.frameIndex * sw, 0, 
-            sw, sh,                 
-            pos.x, pos.y,           
+            sw, sh,                  
+            pos.x, pos.y,            
             this.characterWidth, this.characterHeight 
         );
 
