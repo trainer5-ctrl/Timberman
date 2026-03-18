@@ -5,201 +5,107 @@ class Lumberjack {
         this.canvas.height = props.maxHeight;
         this.ctx = props.el.getContext('2d');
         
-        this.background = '#d3f7ff'; // Warna langit biru muda
+        this.background = '#d3f7ff';
         this.score = 0;
         this.highScore = localStorage.getItem('highScore') || 0;
-        
-        // Referensi Elemen UI HTML (Diambil dari index.html)
-        this.elScore = document.getElementById('ui-current-score');
-        this.elTimerBar = document.getElementById('timer-bar');
-        
-        // Callback fungsi dari main.js
-        this.onGameOver = props.onGameOver;
-        
-        // Input Controls
         this.btnLeft = props.btnLeft;
         this.btnRight = props.btnRight;
 
-        // --- DETEKSI USER TELEGRAM ---
+        // ==========================================
+        // 🆔 OTOMATIS AMBIL DATA USER TELEGRAM
+        // ==========================================
         this.playerName = "Guest Player"; 
-        const tg = window.Telegram?.WebApp;
+
+        const tg = window.Telegram.WebApp;
+
         if (tg) {
-            tg.ready();
-            tg.expand();
-            // Set warna header agar sinkron
-            tg.setHeaderColor('#d3f7ff');
-            if (tg.initDataUnsafe?.user) {
-                const u = tg.initDataUnsafe.user;
-                this.playerName = u.username ? "@" + u.username : u.first_name;
+            tg.ready(); // Sinkronisasi dengan Telegram
+            tg.expand(); // Buat layar jadi penuh (Fullscreen)
+
+            // Cek apakah data user tersedia
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                const user = tg.initDataUnsafe.user;
+                // Jika punya username pakai @, jika tidak pakai nama asli
+                this.playerName = user.username ? "@" + user.username : `${user.first_name} ${user.last_name || ""}`.trim();
             }
         }
-        
-        // State Game Intern
-        this.isGameOver = false;
-        
-        // Logika Timer/Waktu (Simulasi Bar)
-        this.timerMax = 100; // 100%
-        this.timerCurrent = this.timerMax;
-        this.timerDecrement = 0.5; // Berapa cepat waktu habis per frame
-    }
 
-    // Inisialisasi awal (pohon & karakter)
-    init() {
-        this.person = new Person(this.canvas);
-        // StartY disesuaikan agar pohon pas di atas tanah
-        this.tree = new Tree(this.canvas, this.canvas.width / 2, this.canvas.height - 300);
-        this.tree.init();
-        
-        // Reset State
-        this.isGameOver = false;
-        this.score = 0;
-        this.timerCurrent = this.timerMax;
-        
-        // Update UI HTML
-        if(this.elScore) this.elScore.innerText = "0";
-        if(this.elTimerBar) this.elTimerBar.style.width = "100%";
-        
         this.listener();
     }
-    
-    // Fungsi untuk mereset game saat restart (tanpa reload halaman)
-    reset() {
-        this.tree.trees = []; // Kosongkan pohon lama
-        this.init(); // Panggil init lagi
+
+    init() {
+        this.person = new Person(this.canvas);
+        this.tree = new Tree(this.canvas, this.canvas.width / 2, this.canvas.height - 350);
+        this.drawBackground();
+        this.tree.init();
     }
 
     drawBackground() {
         this.ctx.fillStyle = this.background;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
         let land = new Image();
         land.src = "images/land.png";
-        // Gambar tanah di bagian paling bawah canvas
-        this.ctx.drawImage(land, 0, this.canvas.height - 250, this.canvas.width, 300);
+        this.ctx.drawImage(land, 0, this.canvas.height - 300, this.canvas.width, 350);
+    }
+
+    drawScore() {
+        this.ctx.fillStyle = "#333";
+        this.ctx.font = "bold 18px Arial";
+        
+        // Menampilkan nama player di kiri atas
+        let nameToDisplay = this.playerName.length > 15 ? this.playerName.substring(0, 13) + ".." : this.playerName;
+        this.ctx.fillText("Player: " + nameToDisplay, 20, 40);
+
+        this.ctx.font = "20px Arial";
+        this.ctx.fillText("Score: " + this.score, 20, 75);
+        this.ctx.fillText("High: " + this.highScore, 20, 105);
     }
 
     draw() {
         this.drawBackground();
         this.tree.draw();
         this.person.draw();
-    }
-    
-    // Fungsi Update (untuk logika waktu)
-    update() {
-        if (this.isGameOver) return;
-        
-        // Logika Waktu Habis (Simulasi Bar)
-        this.timerCurrent -= this.timerDecrement;
-        
-        // Update UI Timer Bar
-        if(this.elTimerBar) {
-            const percentage = (this.timerCurrent / this.timerMax) * 100;
-            this.elTimerBar.style.width = percentage + "%";
-            
-            // Ubah warna bar jadi merah jika waktu mau habis
-            if (percentage < 30) {
-                this.elTimerBar.style.background = "#e74c3c"; // Merah
-            } else {
-                this.elTimerBar.style.background = "#60c560"; // Hijau
-            }
-        }
-        
-        // Cek jika waktu habis
-        if (this.timerCurrent <= 0) {
-            this.triggerGameOver();
-        }
+        this.drawScore();
     }
 
     render() {
-        if (!this.isGameOver) {
-            this.update();
-            this.draw();
-            requestAnimationFrame(() => this.render());
-        }
+        this.draw();
+        requestAnimationFrame(() => this.render());
     }
 
     move(direction) {
-        if (this.isGameOver) return;
-        
         this.person.characterPosition = direction;
         this.tree.trees.shift();
         this.tree.createNewTrunk();
 
-        // Sound & Haptic Profesional
-        const snd = new Audio("audio/cut.wav");
-        snd.volume = 0.5;
-        snd.play().catch(() => {});
+        let audio = new Audio("audio/cut.wav");
+        audio.playbackRate = 2;
+        audio.play().catch(() => {});
 
-        if (window.Telegram?.WebApp?.HapticFeedback) {
-            window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
-        }
-        
-        // Tambah Skor
         this.score++;
-        if(this.elScore) this.elScore.innerText = this.score;
-        
-        // Tambah sedikit waktu setiap kali memotong
-        this.timerCurrent = Math.min(this.timerMax, this.timerCurrent + 5);
-
         let currentBranch = this.tree.trees[0].value;
 
-        // --- CEK TABRAKAN ---
         if (currentBranch === direction) {
-            this.triggerGameOver();
-        }
-    }
-    
-    // Fungsi Pusat untuk Game Over
-    triggerGameOver() {
-        if (this.isGameOver) return; // Mencegah pemicu ganda
-        
-        this.isGameOver = true;
+            // Fitur Getar (Haptic) Telegram
+            if (window.Telegram.WebApp.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+            }
 
-        // Haptic Telegram saat kalah
-        if (window.Telegram?.WebApp?.HapticFeedback) {
-            window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
-        }
-
-        // Atur Highscore
-        if (this.score > this.highScore) {
-            this.highScore = this.score;
-            localStorage.setItem('highScore', this.score);
-        }
-
-        // Panggil callback ke main.js untuk pindah screen
-        if (this.onGameOver) {
-            this.onGameOver(this.score, this.playerName, this.highScore);
+            setTimeout(() => {
+                if (this.score > this.highScore) {
+                    localStorage.setItem('highScore', this.score);
+                }
+                alert(`GAME OVER!\n\nPlayer: ${this.playerName}\nScore: ${this.score}`);
+                window.location.reload();
+            }, 50);
         }
     }
 
     listener() {
-        // Hapus listener lama dulu agar tidak menumpuk saat reset
-        window.removeEventListener('keydown', this._keyDownHandler);
-        
-        // Definisikan handler agar bisa dihapus
-        this._keyDownHandler = (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'a') this.move('left');
-            if (e.key === 'ArrowRight' || e.key === 'd') this.move('right');
-        };
-        
-        // Support Keyboard (Desktop)
-        window.addEventListener('keydown', this._keyDownHandler);
-
-        // 🔥 OPTIMASI TOUCH (Mencegah Zoom/Scroll)
-        const handleTouch = (e, direction) => {
-            if (e.cancelable) e.preventDefault(); 
-            this.move(direction);
-        };
-
-        // Hapus listener tombol lama
-        this.btnLeft.onmousedown = null;
-        this.btnRight.onmousedown = null;
-        
-        // Gunakan touchstart agar input terbaca seketika
-        this.btnLeft.addEventListener('touchstart', (e) => handleTouch(e, 'left'), { passive: false });
-        this.btnRight.addEventListener('touchstart', (e) => handleTouch(e, 'right'), { passive: false });
-        
-        // Fallback klik (Desktop)
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'a' || e.key === 'ArrowLeft') this.move('left');
+            if (e.key === 'd' || e.key === 'ArrowRight') this.move('right');
+        });
         this.btnLeft.onclick = () => this.move('left');
         this.btnRight.onclick = () => this.move('right');
     }
