@@ -3,36 +3,62 @@ class Person {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         
-        // Memuat gambar sekali saja di constructor
+        // Memuat gambar
         this.image = new Image();
         this.image.src = "images/character.png";
 
+        // Status Posisi
         this.characterPosition = "right";
+        this.characterWidth = 90; // Ukuran sedikit disesuaikan agar pas
+        this.characterHeight = 170;
+
+        // Posisi X & Y agar pas dengan batang pohon
         this.characterPositions = {
-            left: { x: canvas.width/2 - 160, y: canvas.height - 320 },
-            right: { x: canvas.width/2 + 80, y: canvas.height - 320 }
+            left: { x: canvas.width / 2 - 170, y: canvas.height - 300 },
+            right: { x: canvas.width / 2 + 80, y: canvas.height - 300 }
         };
 
-        this.characterWidth = 75;
-        this.characterHeight = 150;
-
-        // --- Logika Animasi ---
+        // --- Logika Animasi Sekali Jalan (Jumping) ---
         this.frameIndex = 0; // Frame aktif (0-5)
-        this.numberOfFrames = 6; // Total ada 6 karakter di gambar
+        this.numberOfFrames = 6; // Total ada 6 frame di sprite sheet
         this.tickCount = 0; // Penghitung waktu
-        this.ticksPerFrame = 10; // Kecepatan animasi (semakin besar semakin lambat)
+        this.ticksPerFrame = 6; // Kecepatan animasi (kecil = makin cepat)
+        
+        // KUNCI: Status apakah sedang melompat
+        this.isJumping = false; 
     }
 
+    // Fungsi untuk memicu animasi lompat
+    startJump() {
+        this.isJumping = true;
+        this.frameIndex = 0; // Mulai dari frame pertama
+        this.tickCount = 0;
+    }
+
+    // Fungsi update hanya berjalan JIKA isJumping true
     update() {
+        if (!this.isJumping) return; // Diam di frame 0 jika tidak melompat
+
         this.tickCount++;
+        
         if (this.tickCount > this.ticksPerFrame) {
             this.tickCount = 0;
-            // Loop frame dari 0 ke 5, lalu kembali ke 0
-            this.frameIndex = (this.frameIndex + 1) % this.numberOfFrames;
+            
+            // Maju ke frame berikutnya
+            this.frameIndex++;
+            
+            // JIKA sudah frame terakhir, matikan status lompat
+            if (this.frameIndex >= this.numberOfFrames) {
+                this.isJumping = false;
+                this.frameIndex = 0; // Kembali diam di frame pertama
+            }
         }
     }
 
     draw() {
+        // Proteksi jika gambar belum load
+        if (!this.image.complete) return;
+
         let pos = this.characterPositions[this.characterPosition];
         
         // Hitung lebar satu frame asli dari gambar source
@@ -41,32 +67,21 @@ class Person {
 
         this.ctx.save();
 
+        // Balik karakter jika hadap kanan
         if (this.characterPosition === 'right') {
-            // Membalik karakter secara horizontal
             this.ctx.translate(pos.x + this.characterWidth / 2, 0);
             this.ctx.scale(-1, 1);
             this.ctx.translate(-(pos.x + this.characterWidth / 2), 0);
         }
 
-        // DrawImage parameter: (image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
         this.ctx.drawImage(
             this.image,
-            this.frameIndex * sw, 0, // Posisi X di sprite sheet (bergeser sesuai frame)
-            sw, sh,                  // Ukuran potongan source
-            pos.x, pos.y,            // Posisi di canvas
-            this.characterWidth, this.characterHeight // Ukuran di canvas
+            this.frameIndex * sw, 0, // Potong gambar berdasarkan frameIndex
+            sw, sh,                  // Ukuran asli potongan
+            pos.x, pos.y,            // Posisi di kanvas
+            this.characterWidth, this.characterHeight // Ukuran di kanvas
         );
 
         this.ctx.restore();
-    }
-
-    moveLeft() {
-        this.characterPosition = 'left';
-        this.update(); // Jalankan update saat bergerak
-    }
-
-    moveRight() {
-        this.characterPosition = 'right';
-        this.update(); // Jalankan update saat bergerak
     }
 }
