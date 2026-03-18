@@ -4,7 +4,7 @@ class Person {
         this.ctx = canvas.getContext('2d');
         
         this.image = new Image();
-        this.image.src = "chara.jpg"; // Nama file sesuai yang kamu unggah
+        this.image.src = "chara.png"; // Nama file sesuai yang kamu unggah
 
         this.characterPosition = "right"; 
         this.characterWidth = 120; // Ukuran tampilan di canvas
