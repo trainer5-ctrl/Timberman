@@ -3,79 +3,71 @@ class Person {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         
+        // Memuat gambar
         this.image = new Image();
-        // SESUAIKAN: Path file dari index.html ke folder images
-        this.image.src = "images/chara-removebg-preview.png"; 
+        this.image.src = "images/character.png";
 
-        this.characterPosition = "right"; 
-        this.characterWidth = 100; // Ukuran tampilan di canvas
-        this.characterHeight = 110; // Sedikit lebih pendek karena teks di bawah gambar asli
+        // Status Posisi
+        this.characterPosition = "right";
+        this.characterWidth = 90; // Ukuran sedikit disesuaikan agar pas
+        this.characterHeight = 170;
 
-        // SESUAIKAN: Atur posisi agar pas dengan Tree.js kamu
+        // Posisi X & Y agar pas dengan batang pohon
         this.characterPositions = {
-            left: { x: canvas.width / 2 - 130, y: canvas.height - 130 },
-            right: { x: canvas.width / 2 + 30, y: canvas.height - 130 }
+            left: { x: canvas.width / 2 - 170, y: canvas.height - 300 },
+            right: { x: canvas.width / 2 + 80, y: canvas.height - 300 }
         };
 
-        // Karena lebar frame di chara-removebg-preview.png tidak seragam,
-        // kita definisikan posisi X manual untuk setiap frame.
-        this.framesX = [
-            0,    // Frame 1 (Angkat Kapak Tinggi)
-            110,  // Frame 2 (Mulai Ayun Balik)
-            218,  // Frame 3 (Ayun Depan)
-            345,  // Frame 4 (Kena Kayu, Ada Partikel)
-            465,  // Frame 5 (Kapak di Bawah)
-            575   // Frame 6 (Posisi Siap)
-        ];
+        // --- Logika Animasi Sekali Jalan (Jumping) ---
+        this.frameIndex = 0; // Frame aktif (0-5)
+        this.numberOfFrames = 6; // Total ada 6 frame di sprite sheet
+        this.tickCount = 0; // Penghitung waktu
+        this.ticksPerFrame = 6; // Kecepatan animasi (kecil = makin cepat)
         
-        // Lebar pemotongan kasar untuk setiap frame
-        this.frameWidths = [110, 108, 127, 120, 110, 110];
+        // KUNCI: Status apakah sedang melompat
+        this.isJumping = false; 
+    }
 
-        this.frameIndex = 0;
-        this.numberOfFrames = 6;
+    // Fungsi untuk memicu animasi lompat
+    startJump() {
+        this.isJumping = true;
+        this.frameIndex = 0; // Mulai dari frame pertama
         this.tickCount = 0;
-        this.ticksPerFrame = 4; // Sedikit lebih cepat agar responsif
-        this.isAnimating = false;
     }
 
-    // Fungsi yang dipanggil saat tombol diklik
-    action(side) {
-        // Reset state untuk ayunan baru
-        this.characterPosition = side;
-        this.frameIndex = 0; // Mulai dari pose angkat kapak
-        this.isAnimating = true; 
-    }
-
+    // Fungsi update hanya berjalan JIKA isJumping true
     update() {
-        if (!this.isAnimating) return;
+        if (!this.isJumping) return; // Diam di frame 0 jika tidak melompat
 
         this.tickCount++;
+        
         if (this.tickCount > this.ticksPerFrame) {
             this.tickCount = 0;
             
-            if (this.frameIndex < this.numberOfFrames - 1) {
-                this.frameIndex++;
-            } else {
-                // Selesai mengayun, kembali ke pose siap (frame 5) dan berhenti
-                this.frameIndex = 5; 
-                this.isAnimating = false;
+            // Maju ke frame berikutnya
+            this.frameIndex++;
+            
+            // JIKA sudah frame terakhir, matikan status lompat
+            if (this.frameIndex >= this.numberOfFrames) {
+                this.isJumping = false;
+                this.frameIndex = 0; // Kembali diam di frame pertama
             }
         }
     }
 
     draw() {
+        // Proteksi jika gambar belum load
         if (!this.image.complete) return;
 
         let pos = this.characterPositions[this.characterPosition];
         
-        // Menggunakan data manual karena frame tidak seragam
-        const sx = this.framesX[this.frameIndex];
-        const sw = this.frameWidths[this.frameIndex]; 
-        const sh = this.image.height - 25; // Potong 25px dari bawah untuk hilangkan teks
+        // Hitung lebar satu frame asli dari gambar source
+        const sw = this.image.width / this.numberOfFrames; 
+        const sh = this.image.height;
 
         this.ctx.save();
 
-        // Balik karakter jika berada di sisi kanan agar menghadap pohon
+        // Balik karakter jika hadap kanan
         if (this.characterPosition === 'right') {
             this.ctx.translate(pos.x + this.characterWidth / 2, 0);
             this.ctx.scale(-1, 1);
@@ -84,10 +76,10 @@ class Person {
 
         this.ctx.drawImage(
             this.image,
-            sx, 0, // Posisi X manual dari array framesX
-            sw, sh, // Lebar manual dan tinggi yang sudah dipotong
-            pos.x, pos.y,            
-            this.characterWidth, this.characterHeight 
+            this.frameIndex * sw, 0, // Potong gambar berdasarkan frameIndex
+            sw, sh,                  // Ukuran asli potongan
+            pos.x, pos.y,            // Posisi di kanvas
+            this.characterWidth, this.characterHeight // Ukuran di kanvas
         );
 
         this.ctx.restore();
