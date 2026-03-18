@@ -3,65 +3,57 @@ class Person {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         
-        // Memuat gambar
         this.image = new Image();
-        this.image.src = "images/character.png";
+        this.image.src = "images/chara.png"; // Nama file baru Anda
 
-        // Status Posisi
         this.characterPosition = "right";
-        this.characterWidth = 90; // Ukuran sedikit disesuaikan agar pas
-        this.characterHeight = 170;
+        this.characterWidth = 120; // Ukuran sedikit lebar karena ada ayunan kapak
+        this.characterHeight = 160;
 
-        // Posisi X & Y agar pas dengan batang pohon
+        this.groundY = canvas.height - 300;
+
+        // Posisi X diatur agar mata kapak mengenai pohon saat frame mengayun
         this.characterPositions = {
-            left: { x: canvas.width / 2 - 170, y: canvas.height - 300 },
-            right: { x: canvas.width / 2 + 80, y: canvas.height - 300 }
+            left: { x: canvas.width / 2 - 190 },
+            right: { x: canvas.width / 2 + 70 }
         };
 
-        // --- Logika Animasi Sekali Jalan (Jumping) ---
-        this.frameIndex = 0; // Frame aktif (0-5)
-        this.numberOfFrames = 6; // Total ada 6 frame di sprite sheet
-        this.tickCount = 0; // Penghitung waktu
-        this.ticksPerFrame = 6; // Kecepatan animasi (kecil = makin cepat)
+        this.frameIndex = 0;
+        this.numberOfFrames = 6; // Tetap 6 frame sesuai gambar baru
+        this.tickCount = 0;
+        this.ticksPerFrame = 4; // Lebih cepat agar tebasan terasa bertenaga
         
-        // KUNCI: Status apakah sedang melompat
-        this.isJumping = false; 
+        this.isChopping = false;
     }
 
-    // Fungsi untuk memicu animasi lompat
-    startJump() {
-        this.isJumping = true;
-        this.frameIndex = 0; // Mulai dari frame pertama
+    startChop() {
+        this.isChopping = true;
+        this.frameIndex = 0;
         this.tickCount = 0;
     }
 
-    // Fungsi update hanya berjalan JIKA isJumping true
     update() {
-        if (!this.isJumping) return; // Diam di frame 0 jika tidak melompat
+        if (!this.isChopping) {
+            this.frameIndex = 5; // Posisi diam (idle) menggunakan frame terakhir
+            return;
+        }
 
         this.tickCount++;
-        
         if (this.tickCount > this.ticksPerFrame) {
             this.tickCount = 0;
-            
-            // Maju ke frame berikutnya
             this.frameIndex++;
             
-            // JIKA sudah frame terakhir, matikan status lompat
             if (this.frameIndex >= this.numberOfFrames) {
-                this.isJumping = false;
-                this.frameIndex = 0; // Kembali diam di frame pertama
+                this.isChopping = false;
+                this.frameIndex = 5; 
             }
         }
     }
 
     draw() {
-        // Proteksi jika gambar belum load
         if (!this.image.complete) return;
 
         let pos = this.characterPositions[this.characterPosition];
-        
-        // Hitung lebar satu frame asli dari gambar source
         const sw = this.image.width / this.numberOfFrames; 
         const sh = this.image.height;
 
@@ -76,10 +68,10 @@ class Person {
 
         this.ctx.drawImage(
             this.image,
-            this.frameIndex * sw, 0, // Potong gambar berdasarkan frameIndex
-            sw, sh,                  // Ukuran asli potongan
-            pos.x, pos.y,            // Posisi di kanvas
-            this.characterWidth, this.characterHeight // Ukuran di kanvas
+            this.frameIndex * sw, 0,
+            sw, sh,
+            pos.x, this.groundY,
+            this.characterWidth, this.characterHeight
         );
 
         this.ctx.restore();
