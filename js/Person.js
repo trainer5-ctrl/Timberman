@@ -10,12 +10,12 @@ class Person {
         // Status Posisi
         this.characterPosition = "right";
         this.characterWidth = 90; // Ukuran sedikit disesuaikan agar pas
-        this.characterHeight = 170;
+        this.characterHeight = 150;
 
         // Posisi X & Y agar pas dengan batang pohon
         this.characterPositions = {
-            left: { x: canvas.width / 2 - 190, y: canvas.height - 280 },
-            right: { x: canvas.width / 2 + 90, y: canvas.height - 280 }
+            left: { x: canvas.width / 2 - 200, y: canvas.height - 330 },
+            right: { x: canvas.width / 2 + 90, y: canvas.height - 330 }
         };
 
         // --- Logika Animasi Sekali Jalan (Jumping) ---
