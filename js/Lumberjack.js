@@ -3,26 +3,21 @@ class Lumberjack {
         this.canvas = props.el;
         this.canvas.width = window.innerWidth > props.maxWidth ? props.maxWidth : window.innerWidth;
         this.canvas.height = props.maxHeight;
-        this.ctx = this.canvas.getContext('2d');
-
-        this.backgroundTop = '#87CEEB'; // gradasi langit biru
-        this.backgroundBottom = '#d3f7ff';
+        this.ctx = props.el.getContext('2d');
+        
+        this.background = '#d3f7ff';
         this.score = 0;
 
-        // UI
+        // 🔥 HUBUNGKAN KE HTML
         this.scoreEl = document.getElementById("score");
-        this.highScore = localStorage.getItem('highScore') || 0;
 
+        this.highScore = localStorage.getItem('highScore') || 0;
         this.btnLeft = props.btnLeft;
         this.btnRight = props.btnRight;
 
-        // Load image tanah
-        this.landImage = new Image();
-        this.landImage.src = "images/land.png";
-
         // TELEGRAM USER
         this.playerName = "Guest Player"; 
-        const tg = window.Telegram?.WebApp;
+        const tg = window.Telegram.WebApp;
 
         if (tg) {
             tg.ready();
@@ -42,56 +37,26 @@ class Lumberjack {
     init() {
         this.person = new Person(this.canvas);
         this.tree = new Tree(this.canvas, this.canvas.width / 2, this.canvas.height - 350);
+        this.drawBackground();
         this.tree.init();
+
+        // 🔥 tampilkan score awal
         this.updateScoreUI();
     }
 
-    // Gambar background dengan gradasi
-   drawBackground() {
-    // gradasi langit dari atas ke bawah
-    const grad = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-    grad.addColorStop(0, this.backgroundTop);
-    grad.addColorStop(1, this.backgroundBottom);
+    drawBackground() {
+        this.ctx.fillStyle = this.background;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    this.ctx.fillStyle = grad;
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-    // gambar tanah di bawah
-    if (this.landImage && this.landImage.complete && this.landImage.naturalWidth !== 0) {
-        const landHeight = 350; // tinggi tanah tetap
-        this.ctx.drawImage(
-            this.landImage,
-            0,
-            this.canvas.height - landHeight,
-            this.canvas.width,
-            landHeight
-        );
-
-        // bayangan tanah
-        this.ctx.fillStyle = 'rgba(0,0,0,0.1)';
-        this.ctx.fillRect(0, this.canvas.height - landHeight, this.canvas.width, 50);
+        let land = new Image();
+        land.src = "images/land.png";
+        this.ctx.drawImage(land, 0, this.canvas.height - 300, this.canvas.width, 350);
     }
-}
 
     draw() {
         this.drawBackground();
-
-        // gambar pohon dengan bayangan batang
-        if (this.tree) {
-            this.ctx.save();
-            this.ctx.shadowColor = "rgba(0,0,0,0.3)";
-            this.ctx.shadowBlur = 10;
-            this.ctx.shadowOffsetX = 5;
-            this.ctx.shadowOffsetY = 5;
-            this.tree.draw();
-            this.ctx.restore();
-        }
-
-        // gambar karakter
-        if (this.person) {
-            this.person.update(); 
-            this.person.draw();
-        }
+        this.tree.draw();
+        this.person.draw();
     }
 
     render() {
@@ -99,10 +64,12 @@ class Lumberjack {
         requestAnimationFrame(() => this.render());
     }
 
-    // Update UI score
+    // 🔥 UPDATE UI SCORE
     updateScoreUI() {
         if (this.scoreEl) {
             this.scoreEl.innerText = this.score;
+
+            // efek animasi kecil
             this.scoreEl.style.transform = "scale(1.2)";
             setTimeout(() => {
                 this.scoreEl.style.transform = "scale(1)";
@@ -111,32 +78,22 @@ class Lumberjack {
     }
 
     move(direction) {
-        if (!this.person) return;
-
-        // animasi lompat
-        this.person.startJump();
-
-        // arah karakter
         this.person.characterPosition = direction;
-
-        // update tree
         this.tree.trees.shift();
         this.tree.createNewTrunk();
 
-        // suara potong kayu
         let audio = new Audio("audio/cut.wav");
         audio.playbackRate = 2;
         audio.play().catch(() => {});
 
-        // tambah score
+        // 🔥 TAMBAH SCORE
         this.score++;
         this.updateScoreUI();
 
         let currentBranch = this.tree.trees[0].value;
 
-        // GAME OVER
         if (currentBranch === direction) {
-            if (window.Telegram?.WebApp?.HapticFeedback) {
+            if (window.Telegram.WebApp.HapticFeedback) {
                 window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
             }
 
@@ -144,7 +101,6 @@ class Lumberjack {
                 if (this.score > this.highScore) {
                     localStorage.setItem('highScore', this.score);
                 }
-
                 alert(`GAME OVER!\n\nPlayer: ${this.playerName}\nScore: ${this.score}`);
                 window.location.reload();
             }, 50);
@@ -157,7 +113,66 @@ class Lumberjack {
             if (e.key === 'd' || e.key === 'ArrowRight') this.move('right');
         });
 
-        if (this.btnLeft) this.btnLeft.onclick = () => this.move('left');
-        if (this.btnRight) this.btnRight.onclick = () => this.move('right');
+        this.btnLeft.onclick = () => this.move('left');
+        this.btnRight.onclick = () => this.move('right');
+    }
+
+    // Di dalam file Lumberjack.js
+
+    draw() {
+        this.drawBackground();
+        this.tree.draw();
+        
+        // TAMBAHKAN LINE INI:
+        // Update frame animasi sebelum digambar
+        if (this.person) {
+            this.person.update(); 
+        }
+        
+        this.person.draw();
+    }
+    
+    render() {
+        this.draw();
+        requestAnimationFrame(() => this.render());
+    }
+
+    // Di dalam file Lumberjack.js
+
+    move(direction) {
+        // KUNCI: Pemicu animasi melompat sekali jalan
+        if (this.person) {
+            this.person.startJump();
+        }
+        
+        // Ubah posisi (ini yang membuat karakter 'lompat' koordinat)
+        this.person.characterPosition = direction;
+        
+        // Logika game lainnya (pohon, audio, dll)
+        this.tree.trees.shift();
+        this.tree.createNewTrunk();
+    
+        let audio = new Audio("audio/cut.wav");
+        audio.playbackRate = 2;
+        audio.play().catch(() => {});
+    
+        this.score++;
+        this.updateScoreUI();
+    
+        let currentBranch = this.tree.trees[0].value;
+    
+        if (currentBranch === direction) {
+            if (window.Telegram.WebApp.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+            }
+    
+            setTimeout(() => {
+                if (this.score > this.highScore) {
+                    localStorage.setItem('highScore', this.score);
+                }
+                alert(`GAME OVER!\n\nPlayer: ${this.playerName}\nScore: ${this.score}`);
+                window.location.reload();
+            }, 50);
+        }
     }
 }
