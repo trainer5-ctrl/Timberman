@@ -31,14 +31,12 @@ class Tree {
     }
 
     drawTrunk(x, y, width, height, color) {
-        // Tambahkan gradien untuk batang agar lebih dramatis
         let grad = this.ctx.createLinearGradient(x, y, x, y + height);
         grad.addColorStop(0, color);
-        grad.addColorStop(1, "#5d3a1a"); // warna lebih gelap di bawah
+        grad.addColorStop(1, "#5d3a1a");
         this.ctx.fillStyle = grad;
         this.ctx.fillRect(x, y, width, height);
 
-        // Tambahkan tekstur batang (garis vertikal tipis)
         this.ctx.strokeStyle = "#4b2e1a";
         this.ctx.lineWidth = 2;
         for(let i = 5; i < width; i += 15){
@@ -50,8 +48,7 @@ class Tree {
     }
 
     drawLeaves(x, y, width) {
-        // Tambahkan daun berbentuk lingkaran di batang dramatis
-        let leafCount = randomNumber(3) + 2; // 2-4 daun
+        let leafCount = randomNumber(3) + 2;
         for(let i = 0; i < leafCount; i++){
             let leafX = x + width/2 + (randomNumber(60)-30);
             let leafY = y - (randomNumber(50)+20);
@@ -62,6 +59,22 @@ class Tree {
         }
     }
 
+    // Fungsi helper: rectangle dengan sudut membulat
+    roundRect(x, y, w, h, r) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + r, y);
+        this.ctx.lineTo(x + w - r, y);
+        this.ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        this.ctx.lineTo(x + w, y + h - r);
+        this.ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        this.ctx.lineTo(x + r, y + h);
+        this.ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        this.ctx.lineTo(x, y + r);
+        this.ctx.quadraticCurveTo(x, y, x + r, y);
+        this.ctx.closePath();
+        this.ctx.fill();
+    }
+
     draw() {
         let x = this.canvas.width / 2 - this.width / 2;
 
@@ -69,29 +82,31 @@ class Tree {
             let trunkY = this.startY - (index * this.height);
             this.drawTrunk(x, trunkY, this.width, this.height, tree.color);
 
-            // Tambahkan ranting dramatis
+            // Ranting kiri
             if(tree.value === 'left') {
                 this.ctx.fillStyle = "#8e5a2c";
-                this.ctx.roundRect(x - this.stemWidth, trunkY + this.height/2, this.stemWidth, this.stemHeight, {upperLeft:10, lowerLeft:10}, true, false);
+                this.roundRect(x - this.stemWidth, trunkY + this.height/2, this.stemWidth, this.stemHeight, 10);
                 this.drawLeaves(x - this.stemWidth, trunkY + this.height/2, this.stemWidth);
             }
+
+            // Ranting kanan
             if(tree.value === 'right') {
                 this.ctx.fillStyle = "#8e5a2c";
-                this.ctx.roundRect(x + this.width, trunkY + this.height/2, this.stemWidth, this.stemHeight, {upperRight:10, lowerRight:10}, true, false);
+                this.roundRect(x + this.width, trunkY + this.height/2, this.stemWidth, this.stemHeight, 10);
                 this.drawLeaves(x + this.width, trunkY + this.height/2, this.stemWidth);
             }
 
-            // Tambahkan daun utama di puncak batang
+            // Daun puncak
             if(index === this.trees.length - 1){
                 this.drawLeaves(x, trunkY, this.width);
             }
         });
 
-        // Batu dramatis di bawah pohon
+        // Batu bawah pohon
         this.ctx.fillStyle = this.stoneColor;
-        this.ctx.roundRect(x - 10, this.startY + this.height - 10, 50, 30, {upperLeft:10, upperRight:10, lowerLeft:10, lowerRight:10}, true, false);
+        this.roundRect(x - 10, this.startY + this.height - 10, 50, 30, 10);
         this.ctx.fillStyle = '#95a5a6';
-        this.ctx.roundRect(x + 20, this.startY + this.height - 10, 80, 30, {upperLeft:10, upperRight:10, lowerLeft:10, lowerRight:10}, true, false);
+        this.roundRect(x + 20, this.startY + this.height - 10, 80, 30, 10);
     }
 }
 
