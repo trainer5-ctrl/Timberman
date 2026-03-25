@@ -1,28 +1,30 @@
 class Lumberjack {
     constructor(props) {
+        // canvas
         this.canvas = props.el;
         this.canvas.width = window.innerWidth > props.maxWidth ? props.maxWidth : window.innerWidth;
-        this.canvas.height = props.maxHeight;
-        this.ctx = props.el.getContext('2d');
-        
+        this.canvas.height = window.innerHeight; // full height HP
+        this.ctx = this.canvas.getContext('2d');
+    
+        // background & score
         this.background = '#d3f7ff';
         this.score = 0;
-
-        // 🔥 HUBUNGKAN KE HTML
+    
+        // HUBUNGKAN KE HTML
         this.scoreEl = document.getElementById("score");
-
+    
         this.highScore = localStorage.getItem('highScore') || 0;
         this.btnLeft = props.btnLeft;
         this.btnRight = props.btnRight;
-
+    
         // TELEGRAM USER
         this.playerName = "Guest Player"; 
-        const tg = window.Telegram.WebApp;
-
+        const tg = window.Telegram?.WebApp;
+    
         if (tg) {
             tg.ready();
             tg.expand();
-
+    
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 const user = tg.initDataUnsafe.user;
                 this.playerName = user.username 
@@ -30,7 +32,7 @@ class Lumberjack {
                     : `${user.first_name} ${user.last_name || ""}`.trim();
             }
         }
-
+    
         this.listener();
     }
 
