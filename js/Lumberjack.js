@@ -5,10 +5,10 @@ class Lumberjack {
         this.canvas.height = props.maxHeight;
         this.ctx = this.canvas.getContext('2d');
 
-        // 🎮 GAME STATE
-        this.gameState = "PLAY"; // PLAY | GAME_OVER
-
+        this.background = '#d3f7ff';
         this.score = 0;
+
+        // UI
         this.scoreEl = document.getElementById("score");
 
         this.highScore = localStorage.getItem('highScore') || 0;
@@ -16,20 +16,13 @@ class Lumberjack {
         this.btnLeft = props.btnLeft;
         this.btnRight = props.btnRight;
 
-        // 🎨 BACKGROUND IMAGE (LOAD SEKALI)
-        this.bgImage = new Image();
-        this.bgImage.src = "images/bg.png";
-
+        // ✅ LOAD IMAGE SEKALI (AMAN)
         this.landImage = new Image();
         this.landImage.src = "images/land.png";
 
-        // 🔊 AUDIO (PRELOAD)
-        this.cutSound = new Audio("audio/cut.wav");
-        this.cutSound.playbackRate = 2;
-
-        // 📱 TELEGRAM USER
+        // TELEGRAM USER
         this.playerName = "Guest Player"; 
-        const tg = window.Telegram.WebApp;
+        const tg = window.Telegram?.WebApp;
 
         if (tg) {
             tg.ready();
@@ -50,66 +43,36 @@ class Lumberjack {
         this.person = new Person(this.canvas);
         this.tree = new Tree(this.canvas, this.canvas.width / 2, this.canvas.height - 350);
 
+        this.tree.init();
+
         this.updateScoreUI();
     }
 
-    // 🎨 BACKGROUND LEBIH BAGUS (GRADIENT + IMAGE)
+    // ✅ BACKGROUND AMAN (NO ERROR)
     drawBackground() {
-        let gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-        gradient.addColorStop(0, "#87CEEB");
-        gradient.addColorStop(1, "#e0f7ff");
-
-        this.ctx.fillStyle = gradient;
+        this.ctx.fillStyle = this.background;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // gambar background jika ada
-        if (this.bgImage.complete) {
-            this.ctx.drawImage(this.bgImage, 0, 0, this.canvas.width, this.canvas.height);
+        // gambar tanah jika sudah load
+        if (this.landImage && this.landImage.complete && this.landImage.naturalWidth !== 0) {
+            this.ctx.drawImage(
+                this.landImage,
+                0,
+                this.canvas.height - 300,
+                this.canvas.width,
+                350
+            );
         }
-
-        // tanah
-        if (this.landImage.complete) {
-            this.ctx.drawImage(this.landImage, 0, this.canvas.height - 300, this.canvas.width, 350);
-        }
-    }
-
-    drawHUD() {
-        this.ctx.fillStyle = "#fff";
-        this.ctx.font = "bold 24px Arial";
-        this.ctx.textAlign = "center";
-        this.ctx.fillText("Score: " + this.score, this.canvas.width / 2, 40);
-    }
-
-    drawGameOver() {
-        this.ctx.fillStyle = "rgba(0,0,0,0.6)";
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        this.ctx.fillStyle = "#fff";
-        this.ctx.font = "bold 40px Arial";
-        this.ctx.textAlign = "center";
-
-        this.ctx.fillText("GAME OVER", this.canvas.width / 2, this.canvas.height / 2 - 40);
-        this.ctx.font = "20px Arial";
-        this.ctx.fillText(`Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2);
-        this.ctx.fillText(`Player: ${this.playerName}`, this.canvas.width / 2, this.canvas.height / 2 + 30);
     }
 
     draw() {
         this.drawBackground();
 
-        if (this.gameState === "PLAY") {
-            this.tree.draw();
+        if (this.tree) this.tree.draw();
 
-            if (this.person) {
-                this.person.update();
-            }
-
-            this.person.draw();
-            this.drawHUD();
-        }
-
-        if (this.gameState === "GAME_OVER") {
-            this.drawGameOver();
+        if (this.person) {
+            this.person.update(); // animasi
+            this.person.draw();   // gambar
         }
     }
 
@@ -118,10 +81,12 @@ class Lumberjack {
         requestAnimationFrame(() => this.render());
     }
 
+    // UPDATE SCORE UI
     updateScoreUI() {
         if (this.scoreEl) {
             this.scoreEl.innerText = this.score;
 
+            // animasi kecil
             this.scoreEl.style.transform = "scale(1.2)";
             setTimeout(() => {
                 this.scoreEl.style.transform = "scale(1)";
@@ -130,42 +95,43 @@ class Lumberjack {
     }
 
     move(direction) {
-        if (this.gameState !== "PLAY") return;
+        if (!this.person) return;
 
         // animasi lompat
-        if (this.person) {
-            this.person.startJump();
-        }
+        this.person.startJump();
 
+        // pindah posisi
         this.person.characterPosition = direction;
 
+        // update tree
         this.tree.trees.shift();
         this.tree.createNewTrunk();
 
-        // 🔊 AUDIO REUSE
-        this.cutSound.currentTime = 0;
-        this.cutSound.play().catch(() => {});
+        // audio
+        let audio = new Audio("audio/cut.wav");
+        audio.playbackRate = 2;
+        audio.play().catch(() => {});
 
+        // tambah score
         this.score++;
         this.updateScoreUI();
 
         let currentBranch = this.tree.trees[0].value;
 
+        // GAME OVER
         if (currentBranch === direction) {
-            this.gameOver();
-        }
-    }
+            if (window.Telegram?.WebApp?.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+            }
 
-    gameOver() {
-        this.gameState = "GAME_OVER";
+            setTimeout(() => {
+                if (this.score > this.highScore) {
+                    localStorage.setItem('highScore', this.score);
+                }
 
-        if (this.score > this.highScore) {
-            localStorage.setItem('highScore', this.score);
-        }
-
-        // 📳 haptic
-        if (window.Telegram?.WebApp?.HapticFeedback) {
-            window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+                alert(`GAME OVER!\n\nPlayer: ${this.playerName}\nScore: ${this.score}`);
+                window.location.reload();
+            }, 50);
         }
     }
 
@@ -175,7 +141,12 @@ class Lumberjack {
             if (e.key === 'd' || e.key === 'ArrowRight') this.move('right');
         });
 
-        this.btnLeft.onclick = () => this.move('left');
-        this.btnRight.onclick = () => this.move('right');
+        if (this.btnLeft) {
+            this.btnLeft.onclick = () => this.move('left');
+        }
+
+        if (this.btnRight) {
+            this.btnRight.onclick = () => this.move('right');
+        }
     }
 }
