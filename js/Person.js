@@ -15,7 +15,8 @@ class Person {
         this.characterHeight = 170;
 
         // 🔥 POSISI DINAMIS (INI KUNCINYA)
-        this.x = canvas.width / 2;
+        this.offsetX = 50; // geser ke kanan 50px
+        this.x = canvas.width / 2 + this.offsetX;
         this.y = canvas.height - 300;
 
         // --- Animasi ---
