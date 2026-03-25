@@ -15,7 +15,7 @@ class Person {
         // Posisi X & Y agar pas dengan batang pohon
         this.characterPositions = {
             left: { x: canvas.width / 2 - 170, y: canvas.height - 330 },
-            right: { x: canvas.width / 2 + 30, y: canvas.height - 330 }
+            right: { x: canvas.width / 2 + 35, y: canvas.height - 330 }
         };
 
         // --- Logika Animasi Sekali Jalan (Jumping) ---
