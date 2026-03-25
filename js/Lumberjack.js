@@ -47,32 +47,31 @@ class Lumberjack {
     }
 
     // Gambar background dengan gradasi
-    drawBackground() {
-        // gradasi langit ke bawah
-        const grad = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-        grad.addColorStop(0, this.backgroundTop);
-        grad.addColorStop(1, this.backgroundBottom);
-    
-        this.ctx.fillStyle = grad;
-        // background penuh canvas
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    
-        // gambar tanah di bawah
-        if (this.landImage && this.landImage.complete && this.landImage.naturalWidth !== 0) {
-            const landHeight = 350; // tinggi tanah
-            this.ctx.drawImage(
-                this.landImage,
-                0,
-                this.canvas.height - landHeight,
-                this.canvas.width,
-                landHeight
-            );
-    
-            // bayangan tanah di atasnya agar lebih dramatis
-            this.ctx.fillStyle = 'rgba(0,0,0,0.1)';
-            this.ctx.fillRect(0, this.canvas.height - landHeight, this.canvas.width, 50);
-        }
+   drawBackground() {
+    // gradasi langit dari atas ke bawah
+    const grad = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+    grad.addColorStop(0, this.backgroundTop);
+    grad.addColorStop(1, this.backgroundBottom);
+
+    this.ctx.fillStyle = grad;
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // gambar tanah di bawah
+    if (this.landImage && this.landImage.complete && this.landImage.naturalWidth !== 0) {
+        const landHeight = 350; // tinggi tanah tetap
+        this.ctx.drawImage(
+            this.landImage,
+            0,
+            this.canvas.height - landHeight,
+            this.canvas.width,
+            landHeight
+        );
+
+        // bayangan tanah
+        this.ctx.fillStyle = 'rgba(0,0,0,0.1)';
+        this.ctx.fillRect(0, this.canvas.height - landHeight, this.canvas.width, 50);
     }
+}
 
     draw() {
         this.drawBackground();
