@@ -14,7 +14,7 @@ class Person {
 
         // Posisi X & Y agar pas dengan batang pohon
         this.characterPositions = {
-            left: { x: canvas.width / 2 - 170, y: canvas.height - 330 },
+            left: { x: canvas.width / 2 - 150, y: canvas.height - 330 },
             right: { x: canvas.width / 2 + 40, y: canvas.height - 330 }
         };
 
